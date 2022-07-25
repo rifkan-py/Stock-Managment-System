@@ -4,8 +4,9 @@ import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import { Product } from './entity/Product';
 import morgan from 'morgan';
+import productsRoute from './routes/products';
+import errorHandler from './middleware/errorHandler';
 
 dotenv.config();
 const app: Application = express();
@@ -18,13 +19,13 @@ export const AppDataSource = new DataSource({
   password: process.env.POSTGRESQL_PASSWORD,
   database: 'test',
   synchronize: true,
-  logging: true,
-  entities: [Product],
+  logging: process.env.NODE_ENV === 'development',
+  entities: [__dirname + '/entity/*.ts'],
   subscribers: [],
   migrations: [],
 });
 
-(async function main() {
+(async () => {
   try {
     await AppDataSource.initialize();
   } catch (error) {
@@ -37,6 +38,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+
+app.use('/api/products', productsRoute);
+
+app.use(errorHandler);
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`server is listening on ${port}`));
